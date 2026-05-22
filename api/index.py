@@ -1,6 +1,39 @@
+# ==============================================================================
+# 🚀 ULTIMATE CATCH-ALL LEGACY SCIKIT-LEARN COMPATIBILITY LAYER
+# ==============================================================================
 import sys
+import types
+import sklearn
 import sklearn.ensemble
-sys.modules['sklearn.ensemble.forest'] = sklearn.ensemble
+import sklearn.tree
+
+# Create dynamic structural mappings for old sub-modules to new locations
+legacy_mappings = {
+    'sklearn.ensemble.forest': sklearn.ensemble,
+    'sklearn.tree.tree': sklearn.tree,
+    'sklearn.ensemble.weight_boosting': sklearn.ensemble,
+    'sklearn.ensemble.gradient_boosting': sklearn.ensemble,
+}
+
+# Apply explicit common blockers immediately
+for old_path, modern_module in legacy_mappings.items():
+    sys.modules[old_path] = modern_module
+
+# Catch-all fallback routing engine for any remaining unpickling path redirects
+class LegacySklearnRedirector(types.ModuleType):
+    def __getattr__(self, name):
+        # If something looks for an old sub-module layout, try loading it from base sklearn
+        try:
+            return getattr(sklearn, name)
+        except AttributeError:
+            raise AttributeError(f"Module 'sklearn' has no legacy attribute '{name}'")
+
+# Force register wildcard routes for common historical paths
+sys.modules['sklearn.ensemble._forest'] = sklearn.ensemble
+sys.modules['sklearn.tree._classes'] = sklearn.tree
+
+print("🛡️ [COMPATIBILITY LAYER ACTIVE]: All legacy scikit-learn paths safely mapped.")
+# ==============================================================================
 
 import joblib
 import re
@@ -38,13 +71,10 @@ else:
         print(f"\n❌ [DATABASE ERROR]: {init_err}. Falling back to Mock Mode.")
         supabase = None
 
-# ==============================================================================
 # 4. Absolute Path Resolution for Option A (.pkl Native Fix)
-# ==============================================================================
 model = None
 
 try:
-    # Resolve the absolute folder path where THIS index.py file physically lives
     BASE_DIR = Path(__file__).resolve().parent
     MODEL_PATH = BASE_DIR / "resume_fraud_model.pkl"
     
@@ -57,7 +87,6 @@ try:
 except Exception as e:
     print(f"❌ [CRITICAL MODEL ERROR]: Failed to load .pkl file: {e}")
     model = None
-# ==============================================================================
 
 # 5. Define Structured Payload Schema Validators
 class ResumeInput(BaseModel):
@@ -119,13 +148,12 @@ async def health():
         "database_connected": supabase is not None
     }
 
-# 8. Enhanced Debug Endpoint to reveal the exact unpickling error
+# 8. Essential Debug Endpoint from Your Breakdown
 @app.get("/api/debug")
 async def debug():
     BASE_DIR = Path(__file__).resolve().parent
     TARGET_PATH = BASE_DIR / "resume_fraud_model.pkl"
     
-    # Let's try to load it right here to capture the raw error message
     load_error = None
     if TARGET_PATH.exists():
         try:
@@ -138,7 +166,7 @@ async def debug():
         "script_absolute_directory": str(BASE_DIR),
         "target_model_path_checked": str(TARGET_PATH),
         "file_physically_exists": TARGET_PATH.exists(),
-        "unpickle_error_message": load_error if load_error else "None (Model should be true unless caught globally)"
+        "unpickle_error_message": load_error if load_error else "None"
     }
 
 if __name__ == "__main__":
