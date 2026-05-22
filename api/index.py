@@ -1,3 +1,7 @@
+import sys
+import sklearn.ensemble
+sys.modules['sklearn.ensemble.forest'] = sklearn.ensemble
+
 import joblib
 import re
 import os
