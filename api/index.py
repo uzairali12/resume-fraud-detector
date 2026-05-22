@@ -8,7 +8,7 @@ from pydantic import BaseModel
 # 1. Initialize the FastAPI Application Engine
 app = FastAPI(title="AI Resume Fraud Detector Backend")
 
-# 2. Configure CORS Middleware (Allows your local frontend server to talk to this API)
+# 2. Configure CORS Middleware (Allows your frontend application layers to communicate with this API)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,28 +37,26 @@ else:
         supabase = None
 
 # 4. Safely Locate and Load the Saved Serialized Model File (.pkl)
-# This format ensures it safely resolves whether running locally or on Vercel
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# This multi-path check covers local environments, relative paths, and Vercel container abstractions
+possible_paths = [
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resume_fraud_model.pkl"),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "resume_fraud_model.pkl"),
+    "resume_fraud_model.pkl",
+    "/var/task/resume_fraud_model.pkl"  # Explicit Vercel serverless worker task environment layout
+]
 
-# Try the root directory path first, then fallback to current api directory if needed
-MODEL_PATH = os.path.join(BASE_DIR, "resume_fraud_model.pkl")
-if not os.path.exists(MODEL_PATH):
-    # Fallback directly to the root workspace directory configuration string
-    MODEL_PATH = "resume_fraud_model.pkl"
+model = None
+for path in possible_paths:
+    if os.path.exists(path):
+        try:
+            model = joblib.load(path)
+            print(f"🎯 [MODEL INITIALIZED]: Successfully loaded weights from path: '{path}'")
+            break
+        except Exception as e:
+            print(f"⚠️ Found file at {path} but failed to extract weights: {e}")
 
-try:
-    joblib.load(MODEL_PATH) # Pre-flight check
-    model = joblib.load(MODEL_PATH)
-    print(f"🎯 [MODEL INITIALIZED]: Loaded model weights successfully from '{MODEL_PATH}'")
-except Exception as e:
-    try:
-        # One last attempt to look directly inside the api folder if it was placed there
-        ALT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resume_fraud_model.pkl")
-        model = joblib.load(ALT_PATH)
-        print(f"🎯 [MODEL INITIALIZED]: Loaded model weights from alternate path '{ALT_PATH}'")
-    except Exception as inner_e:
-        print(f"❌ [CRITICAL MODEL ERROR]: Failed to map model file. Details: {inner_e}")
-        model = None
+if model is None:
+    print("❌ [CRITICAL MODEL ERROR]: All directory path resolutions exhausted. Model artifact missing entirely.")
 
 # 5. Define Structured Payload Schema Validators (Pydantic DataType Rules)
 class ResumeInput(BaseModel):
@@ -106,12 +104,13 @@ async def verify_resume(payload: ResumeInput):
     else:
         print(f"⏩ [MOCK RUN SUCCESS]: Checked text for {payload.user_email}. Skipped database execution sync.")
 
-   # 8. Return JSON Response payload directly back to the JS app handler
+    # 8. Return JSON Response payload directly back to the JS app handler
+    # Exposes key tracking points at both root level and nested level to prevent JavaScript crashes
     return {
         "prediction": prediction,
         "verdict": verdict_string,
         "confidence_percentage": round(confidence, 2),
-        "detected_skills_list": detected_skills,  # Added to the root level!
+        "detected_skills_list": detected_skills,  # Core fix for frontend script tracking queries
         "analytics": {
             "detected_skills_count": len(detected_skills),
             "detected_skills_list": detected_skills,
@@ -128,7 +127,6 @@ async def health():
         "database_connected": supabase is not None
     }
 
-# Paste this at the absolute bottom of api/index.py
 if __name__ == "__main__":
     import uvicorn
     print("🚀 Launching local development environment engine...")
