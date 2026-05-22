@@ -4,7 +4,7 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python",
-      "config": { "includeFiles": ["resume_fraud_model.pkl"] }
+      "config": { "includeFiles": ["api/resume_fraud_model.pkl"] }
     },
     {
       "src": "public/**",
