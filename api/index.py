@@ -8,7 +8,7 @@ from pydantic import BaseModel
 # 1. Initialize the FastAPI Application Engine
 app = FastAPI(title="AI Resume Fraud Detector Backend")
 
-# 2. Configure CORS Middleware (Allows your frontend application layers to communicate with this API)
+# 2. Configure CORS Middleware (Allows your frontend layers to talk to this API)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,7 +21,6 @@ app.add_middleware(
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
-# If keys are blank or still contain default placeholder text, enable Mock Mode
 if not SUPABASE_URL or "your-supabase" in SUPABASE_URL:
     print("\n⚠️  [MOCK MODE NOTICE]: Running in MOCK DATABASE MODE.")
     print("👉 Predictions will process via ML Model, but audit trails won't be saved online.\n")
@@ -36,27 +35,33 @@ else:
         print("Falling back into Mock Mode to keep server alive...\n")
         supabase = None
 
+# ==============================================================================
 # 4. Safely Locate and Load the Saved Serialized Model File (.pkl)
-# This multi-path check covers local environments, relative paths, and Vercel container abstractions
+# ==============================================================================
+# This array prioritizes the local 'api/' directory folder, then checks fallback roots
 possible_paths = [
-    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resume_fraud_model.pkl"),
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "resume_fraud_model.pkl"),
-    "resume_fraud_model.pkl",
-    "/var/task/resume_fraud_model.pkl"  # Explicit Vercel serverless worker task environment layout
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "resume_fraud_model.pkl"),  # 1. Same folder as index.py (api/)
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resume_fraud_model.pkl"),  # 2. Project Root Directory
+    "resume_fraud_model.pkl",  # 3. Relative execution directory path string
+    "/var/task/api/resume_fraud_model.pkl",  # 4. Vercel Serverless Function isolated task environment container
+    "/var/task/resume_fraud_model.pkl"  # 5. Alternate Vercel workspace container path
 ]
 
 model = None
 for path in possible_paths:
+    print(f"🔍 [PATH AUDIT]: Checking for model configuration layout at: '{path}'")
     if os.path.exists(path):
         try:
             model = joblib.load(path)
-            print(f"🎯 [MODEL INITIALIZED]: Successfully loaded weights from path: '{path}'")
+            print(f"🎯 [MODEL INITIALIZED]: Successfully loaded native weights from path: '{path}'")
             break
         except Exception as e:
             print(f"⚠️ Found file at {path} but failed to extract weights: {e}")
 
 if model is None:
-    print("❌ [CRITICAL MODEL ERROR]: All directory path resolutions exhausted. Model artifact missing entirely.")
+    print("❌ [CRITICAL MODEL ERROR]: All directory path resolutions exhausted. Native .pkl artifact missing.")
+
+# ==============================================================================
 
 # 5. Define Structured Payload Schema Validators (Pydantic DataType Rules)
 class ResumeInput(BaseModel):
@@ -81,7 +86,7 @@ async def verify_resume(payload: ResumeInput):
     probabilities = model.predict_proba([raw_text])[0]
     confidence = float(probabilities[prediction]) * 100
     
-    # Calculate parsing match counts for UI metadata reporting
+    # Calculate parsing match counts for UI reporting layout engines
     text_lower = raw_text.lower()
     detected_skills = [s for s in skills_lookup if re.search(r'\b' + re.escape(s) + r'\b', text_lower)]
     verdict_string = "Suspicious / High Risk" if prediction == 1 else "Genuine / Low Risk"
@@ -105,12 +110,11 @@ async def verify_resume(payload: ResumeInput):
         print(f"⏩ [MOCK RUN SUCCESS]: Checked text for {payload.user_email}. Skipped database execution sync.")
 
     # 8. Return JSON Response payload directly back to the JS app handler
-    # Exposes key tracking points at both root level and nested level to prevent JavaScript crashes
     return {
         "prediction": prediction,
         "verdict": verdict_string,
         "confidence_percentage": round(confidence, 2),
-        "detected_skills_list": detected_skills,  # Core fix for frontend script tracking queries
+        "detected_skills_list": detected_skills,  # Core frontend tracking element key root
         "analytics": {
             "detected_skills_count": len(detected_skills),
             "detected_skills_list": detected_skills,
