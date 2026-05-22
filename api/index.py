@@ -37,15 +37,28 @@ else:
         supabase = None
 
 # 4. Safely Locate and Load the Saved Serialized Model File (.pkl)
+# This format ensures it safely resolves whether running locally or on Vercel
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Try the root directory path first, then fallback to current api directory if needed
 MODEL_PATH = os.path.join(BASE_DIR, "resume_fraud_model.pkl")
+if not os.path.exists(MODEL_PATH):
+    # Fallback directly to the root workspace directory configuration string
+    MODEL_PATH = "resume_fraud_model.pkl"
 
 try:
+    joblib.load(MODEL_PATH) # Pre-flight check
     model = joblib.load(MODEL_PATH)
-    print(f"🎯 [MODEL INITIALIZED]: Successfully loaded model matrix weights from '{MODEL_PATH}'")
+    print(f"🎯 [MODEL INITIALIZED]: Loaded model weights successfully from '{MODEL_PATH}'")
 except Exception as e:
-    print(f"❌ [CRITICAL MODEL ERROR]: Failed to map model file. Details: {e}")
-    model = None
+    try:
+        # One last attempt to look directly inside the api folder if it was placed there
+        ALT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resume_fraud_model.pkl")
+        model = joblib.load(ALT_PATH)
+        print(f"🎯 [MODEL INITIALIZED]: Loaded model weights from alternate path '{ALT_PATH}'")
+    except Exception as inner_e:
+        print(f"❌ [CRITICAL MODEL ERROR]: Failed to map model file. Details: {inner_e}")
+        model = None
 
 # 5. Define Structured Payload Schema Validators (Pydantic DataType Rules)
 class ResumeInput(BaseModel):
