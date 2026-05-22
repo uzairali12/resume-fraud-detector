@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Enterprise Security Dashboard - Resume Guard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+</head>
+<body>
+    <div id="authScreen" class="auth-container">
+        <h2>🔒 HR Portal Identity Access</h2>
+        <label>Work Email Address</label>
+        <input type="email" id="email" placeholder="name@company.com">
+        <label>Security Access Code Key</label>
+        <input type="password" id="password" placeholder="••••••••">
+        <button onclick="handleLogin()">Authorize Entry</button>
+        <button onclick="handleSignUp()" class="btn-alt">Register New Clerk Profile</button>
+    </div>
+
+    <div id="dashboardScreen" class="dashboard-container hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin:0; border: none;">🔍 Candidate Analytics Node</h2>
+            <button onclick="handleLogout()" style="width: auto; padding: 6px 12px; background: #e74c3c;">Exit</button>
+        </div>
+        <p id="userGreeting" style="font-size: 13px; color:#7f8c8d; font-style: italic; margin-top:-10px;"></p>
+        
+        <div class="file-drop" onclick="document.getElementById('fileUpload').click()">
+            <p>📁 Select or Drop Candidate Profile Application PDF</p>
+            <input type="file" id="fileUpload" accept=".pdf" style="display: none;" onchange="document.getElementById('fileNameTxt').innerText = this.files[0].name">
+            <span id="fileNameTxt" style="font-weight: bold; color: #2ecc71;"></span>
+        </div>
+        <button id="processBtn" onclick="processUploadedFile()">Process Application Profile</button>
+        <div id="resultBox" class="result-box hidden"></div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
