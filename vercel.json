@@ -4,11 +4,9 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python",
-      "config": { "includeFiles": ["api/resume_fraud_model.pkl"] }
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
+      "config": { 
+        "includeFiles": ["api/resume_fraud_model.pkl"] 
+      }
     }
   ],
   "routes": [
@@ -17,8 +15,16 @@
       "dest": "api/index.py"
     },
     {
+      "src": "/docs",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/openapi.json",
+      "dest": "api/index.py"
+    },
+    {
       "src": "/(.*)",
-      "dest": "public/$1"
+      "dest": "api/index.py"
     }
   ]
 }
