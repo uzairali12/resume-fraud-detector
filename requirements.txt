@@ -1,7 +1,9 @@
-fastapi
-uvicorn
-scikit-learn
-pandas
-joblib
-supabase
-pypdf
+fastapi==0.110.0
+uvicorn==0.28.0
+scikit-learn==1.5.2
+numpy==1.26.4
+pandas==2.2.2
+joblib==1.4.2
+pydantic==2.6.4
+supabase==2.4.0
+pypdf==4.1.0

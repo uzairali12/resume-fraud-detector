@@ -115,16 +115,26 @@ async def health():
         "database_connected": supabase is not None
     }
 
-# 8. Essential Debug Endpoint from Your Breakdown
+# 8. Enhanced Debug Endpoint to reveal the exact unpickling error
 @app.get("/api/debug")
 async def debug():
     BASE_DIR = Path(__file__).resolve().parent
     TARGET_PATH = BASE_DIR / "resume_fraud_model.pkl"
+    
+    # Let's try to load it right here to capture the raw error message
+    load_error = None
+    if TARGET_PATH.exists():
+        try:
+            joblib.load(TARGET_PATH)
+        except Exception as e:
+            load_error = str(e)
+            
     return {
         "current_working_directory": os.getcwd(),
         "script_absolute_directory": str(BASE_DIR),
         "target_model_path_checked": str(TARGET_PATH),
-        "file_physically_exists": TARGET_PATH.exists()
+        "file_physically_exists": TARGET_PATH.exists(),
+        "unpickle_error_message": load_error if load_error else "None (Model should be true unless caught globally)"
     }
 
 if __name__ == "__main__":
