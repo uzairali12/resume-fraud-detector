@@ -93,11 +93,12 @@ async def verify_resume(payload: ResumeInput):
     else:
         print(f"⏩ [MOCK RUN SUCCESS]: Checked text for {payload.user_email}. Skipped database execution sync.")
 
-    # 8. Return JSON Response payload directly back to the JS app handler
+   # 8. Return JSON Response payload directly back to the JS app handler
     return {
         "prediction": prediction,
         "verdict": verdict_string,
         "confidence_percentage": round(confidence, 2),
+        "detected_skills_list": detected_skills,  # Added to the root level!
         "analytics": {
             "detected_skills_count": len(detected_skills),
             "detected_skills_list": detected_skills,
