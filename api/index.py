@@ -1,40 +1,3 @@
-# ==============================================================================
-# 🚀 ULTIMATE CATCH-ALL LEGACY SCIKIT-LEARN COMPATIBILITY LAYER
-# ==============================================================================
-import sys
-import types
-import sklearn
-import sklearn.ensemble
-import sklearn.tree
-
-# Create dynamic structural mappings for old sub-modules to new locations
-legacy_mappings = {
-    'sklearn.ensemble.forest': sklearn.ensemble,
-    'sklearn.tree.tree': sklearn.tree,
-    'sklearn.ensemble.weight_boosting': sklearn.ensemble,
-    'sklearn.ensemble.gradient_boosting': sklearn.ensemble,
-}
-
-# Apply explicit common blockers immediately
-for old_path, modern_module in legacy_mappings.items():
-    sys.modules[old_path] = modern_module
-
-# Catch-all fallback routing engine for any remaining unpickling path redirects
-class LegacySklearnRedirector(types.ModuleType):
-    def __getattr__(self, name):
-        # If something looks for an old sub-module layout, try loading it from base sklearn
-        try:
-            return getattr(sklearn, name)
-        except AttributeError:
-            raise AttributeError(f"Module 'sklearn' has no legacy attribute '{name}'")
-
-# Force register wildcard routes for common historical paths
-sys.modules['sklearn.ensemble._forest'] = sklearn.ensemble
-sys.modules['sklearn.tree._classes'] = sklearn.tree
-
-print("🛡️ [COMPATIBILITY LAYER ACTIVE]: All legacy scikit-learn paths safely mapped.")
-# ==============================================================================
-
 import joblib
 import re
 import os
@@ -42,6 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import pandas as pd  # Keeps internal pandas formats perfectly aligned
 
 # 1. Initialize the FastAPI Application Engine
 app = FastAPI(title="AI Resume Fraud Detector Backend")
@@ -71,7 +35,7 @@ else:
         print(f"\n❌ [DATABASE ERROR]: {init_err}. Falling back to Mock Mode.")
         supabase = None
 
-# 4. Absolute Path Resolution for Option A (.pkl Native Fix)
+# 4. Absolute Path Resolution for Modern Model (.pkl Native Fix)
 model = None
 
 try:
@@ -80,12 +44,12 @@ try:
     
     if MODEL_PATH.exists():
         model = joblib.load(MODEL_PATH)
-        print(f"🎯 [MODEL INITIALIZED]: Successfully loaded weights from absolute path: '{MODEL_PATH}'")
+        print(f"🎯 [MODEL INITIALIZED]: Successfully loaded modern weights from: '{MODEL_PATH}'")
     else:
         print(f"❌ [PATH ERROR]: Model file does not exist at expected path: {MODEL_PATH}")
 
 except Exception as e:
-    print(f"❌ [CRITICAL MODEL ERROR]: Failed to load .pkl file: {e}")
+    print(f"❌ [CRITICAL MODEL ERROR]: Failed to load modern .pkl file: {e}")
     model = None
 
 # 5. Define Structured Payload Schema Validators
