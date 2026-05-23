@@ -1,3 +1,5 @@
-data_science/
-.venv/
+venv/
 __pycache__/
+*.pyc
+data_science/
+.env

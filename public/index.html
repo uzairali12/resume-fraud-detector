@@ -1,85 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Security Dashboard - Resume Guard</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResumeGuard — AI Resume Fraud Detector</title>
+  <meta name="description" content="Detect fraudulent resumes instantly using machine learning. Upload any PDF or DOCX and get results in seconds.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <div id="authScreen" class="auth-container">
-        <div class="auth-header">
-            <span class="shield-badge">🛡️ SECURE PORTAL</span>
-            <h2>HR Identity Access</h2>
-            <p>Authenticate with credentials to access candidate verification networks.</p>
-        </div>
-        
-        <div class="input-group">
-            <label>Work Email Address</label>
-            <input type="email" id="email" placeholder="name@company.com">
-        </div>
-        
-        <div class="input-group">
-            <label>Security Access Code</label>
-            <input type="password" id="password" placeholder="••••••••">
-        </div>
-        
-        <button class="btn-primary" onclick="handleLogin()">Authorize Entry</button>
-        <button class="btn-secondary" onclick="handleSignUp()">Register New Clerk Profile</button>
+  <!-- ── NAVBAR ──────────────────────────────────────────── -->
+  <nav class="navbar" id="navbar">
+    <a href="#" class="logo" onclick="navigateTo('landing'); return false;">
+      <div class="logo-mark">RG</div>
+      <span>ResumeGuard</span>
+    </a>
+
+    <div class="nav-links" id="nav-links">
+      <a href="#" onclick="navigateTo('dashboard'); return false;">
+        <i class="ti ti-scan" aria-hidden="true"></i> Analyze
+      </a>
+      <a href="#" onclick="navigateTo('history'); return false;">
+        <i class="ti ti-history" aria-hidden="true"></i> History
+      </a>
     </div>
 
-    <div id="dashboardScreen" class="dashboard-container hidden">
-        <header class="dashboard-header">
-            <div>
-                <h2>Candidate Analytics Node</h2>
-                <p id="userGreeting" class="user-greeting"></p>
-            </div>
-            <button class="btn-danger" onclick="handleLogout()">Exit Terminal</button>
-        </header>
-        
-        <div class="file-drop" id="dropZone" onclick="document.getElementById('fileUpload').click()">
-            <div class="drop-content">
-                <div class="drop-icon">📁</div>
-                <h3>Select or Drop Candidate Profile</h3>
-                <p>Accepts production grade document vectors (.PDF format)</p>
-                <input type="file" id="fileUpload" accept=".pdf" style="display: none;" onchange="handleFileSelection(this)">
-                <span id="fileNameTxt" class="file-name-badge"></span>
-            </div>
-        </div>
-        
-        <button id="processBtn" class="btn-primary" onclick="processUploadedFile()">Process Application Profile</button>
-        
-        <div id="resultBox" class="result-box hidden">
-            <div class="verdict-banner" id="verdictBanner">
-                <span class="verdict-icon" id="verdictIcon"></span>
-                <span class="verdict-title" id="verdictTitle"></span>
-            </div>
-            
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <span class="metric-label">Confidence Weight</span>
-                    <span class="metric-value" id="metricConfidence">0.00%</span>
-                </div>
-                <div class="metric-card">
-                    <span class="metric-label">Document Signatures</span>
-                    <span class="metric-value" id="metricSkillsCount">0</span>
-                </div>
-            </div>
-
-            <div class="skills-section">
-                <h4>Extracted Skill Tokens</h4>
-                <div class="skills-tags" id="skillsTagsContainer">
-                    </div>
-            </div>
-        </div>
+    <div class="nav-actions">
+      <div class="nav-user hidden" id="nav-user">
+        <img class="avatar" id="user-avatar" src="" alt="User">
+        <span class="user-name" id="user-name"></span>
+        <button class="btn-ghost btn-sm" onclick="signOut()">Sign out</button>
+      </div>
+      <button class="btn-primary btn-sm" id="nav-signin" onclick="openAuth()">Sign in</button>
     </div>
+  </nav>
 
-    <script src="js/auth.js"></script>
-    <script src="js/app.js"></script>
+  <!-- ── VIEW: LANDING ───────────────────────────────────── -->
+  <section id="view-landing" class="view">
+    <div class="hero">
+      <div class="hero-eyebrow">
+        <i class="ti ti-shield-check" aria-hidden="true"></i>
+        AI-Powered Resume Analysis
+      </div>
+
+      <h1 class="hero-title">
+        Detect Resume Fraud<br>
+        <em>Before It Costs You</em>
+      </h1>
+
+      <p class="hero-subtitle">
+        Upload any PDF or DOCX resume and get an instant ML-powered fraud analysis —
+        timeline overlaps, experience inflation, credibility signals, and more.
+      </p>
+
+      <div class="hero-actions">
+        <button class="btn-primary btn-lg" onclick="openAuth()">
+          <i class="ti ti-rocket" aria-hidden="true"></i>
+          Start Analyzing Free
+        </button>
+        <button class="btn-outline btn-lg" onclick="navigateTo('dashboard')">
+          Try Without Account
+        </button>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-wrap">
+            <i class="ti ti-bolt" aria-hidden="true"></i>
+          </div>
+          <h3>Instant Results</h3>
+          <p>Upload, click analyze, get results in under 3 seconds.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">
+            <i class="ti ti-brain" aria-hidden="true"></i>
+          </div>
+          <h3>ML-Powered</h3>
+          <p>Trained on 2,400+ resumes. 83% fraud precision, 80% CV accuracy.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">
+            <i class="ti ti-search" aria-hidden="true"></i>
+          </div>
+          <h3>Deep Signals</h3>
+          <p>Detects year inflation, date overlaps, prestige keyword abuse, and buzzword overload.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">
+            <i class="ti ti-lock" aria-hidden="true"></i>
+          </div>
+          <h3>Secure & Private</h3>
+          <p>Files are analyzed in memory and never stored. Your data stays yours.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── VIEW: DASHBOARD ─────────────────────────────────── -->
+  <section id="view-dashboard" class="view hidden">
+    <div class="container">
+      <div class="page-header">
+        <h2>Analyze a Resume</h2>
+        <p>Upload a PDF or DOCX file — max 5 MB</p>
+      </div>
+
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".pdf,.docx,.doc" hidden>
+
+        <div id="upload-idle">
+          <div class="upload-icon-wrap">
+            <i class="ti ti-file-upload" aria-hidden="true"></i>
+          </div>
+          <p class="upload-title">Drop your resume here</p>
+          <p class="upload-hint">PDF or DOCX · Max 5 MB</p>
+          <button class="btn-outline" onclick="document.getElementById('file-input').click(); event.stopPropagation();">
+            Browse Files
+          </button>
+        </div>
+
+        <div id="upload-selected" class="hidden">
+          <div class="file-preview">
+            <div class="file-type-badge" id="file-type-badge">PDF</div>
+            <div class="file-meta">
+              <span class="file-name" id="file-name-display"></span>
+              <span class="file-size" id="file-size-display"></span>
+            </div>
+            <button class="btn-icon" onclick="clearFile(); event.stopPropagation();" aria-label="Remove file">
+              <i class="ti ti-x" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary btn-analyze" id="analyze-btn" onclick="analyzeResume()" disabled>
+        <span id="btn-label">
+          <i class="ti ti-scan" aria-hidden="true"></i>
+          Analyze Resume
+        </span>
+        <div class="spinner hidden" id="btn-spinner"></div>
+      </button>
+
+      <p class="analyze-note">
+        <i class="ti ti-info-circle" aria-hidden="true"></i>
+        Sign in to save your results and access analysis history
+      </p>
+    </div>
+  </section>
+
+  <!-- ── VIEW: RESULT ────────────────────────────────────── -->
+  <section id="view-result" class="view hidden">
+    <div class="container">
+      <button class="btn-back" onclick="navigateTo('dashboard')">
+        <i class="ti ti-arrow-left" aria-hidden="true"></i>
+        Back to Upload
+      </button>
+
+      <div class="result-card" id="result-card">
+        <div class="result-header">
+          <div>
+            <div class="result-filename" id="result-filename"></div>
+            <div class="result-date" id="result-date"></div>
+          </div>
+          <button class="btn-outline btn-sm" onclick="navigateTo('dashboard')">
+            <i class="ti ti-upload" aria-hidden="true"></i>
+            Analyze Another
+          </button>
+        </div>
+
+        <div class="verdict-row">
+          <div class="verdict-badge" id="verdict-badge"></div>
+          <div class="confidence-block">
+            <div class="confidence-label">Model confidence</div>
+            <div class="confidence-track">
+              <div class="confidence-fill" id="confidence-fill"></div>
+            </div>
+            <div class="confidence-value" id="confidence-value"></div>
+          </div>
+        </div>
+
+        <div class="signals-section">
+          <div class="section-label">Signal Breakdown</div>
+          <div class="signals-grid" id="signals-grid"></div>
+        </div>
+
+        <div class="flags-section" id="flags-section"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── VIEW: HISTORY ───────────────────────────────────── -->
+  <section id="view-history" class="view hidden">
+    <div class="container">
+      <div class="page-header">
+        <h2>Analysis History</h2>
+        <p>All your past resume scans</p>
+      </div>
+
+      <div class="loading-state" id="history-loading">
+        <div class="spinner"></div>
+        Loading…
+      </div>
+
+      <div class="empty-state hidden" id="history-empty">
+        <i class="ti ti-folder-open" aria-hidden="true"></i>
+        <p id="history-empty-msg">No analyses yet.</p>
+        <button class="btn-primary btn-sm" onclick="navigateTo('dashboard')">Analyze a Resume →</button>
+      </div>
+
+      <div class="table-wrap hidden" id="history-table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Result</th>
+              <th>Confidence</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── AUTH MODAL ──────────────────────────────────────── -->
+  <div class="modal-overlay hidden" id="modal-auth" onclick="handleOverlayClick(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+      <button class="modal-close" onclick="closeAuth()" aria-label="Close">
+        <i class="ti ti-x" aria-hidden="true"></i>
+      </button>
+
+      <h2 class="modal-heading" id="modal-heading">Welcome to ResumeGuard</h2>
+      <p class="modal-sub" id="modal-sub">Sign in to save your analyses</p>
+
+      <div class="oauth-stack">
+        <button class="oauth-btn" onclick="signInWithGoogle()">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352 2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 0 0 1.599-2.431H8v-3.08h7.545z" fill="#4285F4"/>
+          </svg>
+          Continue with Google
+        </button>
+        <button class="oauth-btn" onclick="signInWithGitHub()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          Continue with GitHub
+        </button>
+        <button class="oauth-btn" onclick="signInWithMicrosoft()">
+          <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true">
+            <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+            <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+            <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+          </svg>
+          Continue with Microsoft
+        </button>
+      </div>
+
+      <div class="or-divider"><span>or use email</span></div>
+
+      <form class="email-form" onsubmit="handleEmailAuth(event)">
+        <input type="email"    id="auth-email"    placeholder="your@email.com" required autocomplete="email">
+        <input type="password" id="auth-password" placeholder="Password (min 6 chars)" required autocomplete="current-password">
+        <div id="name-field" class="hidden">
+          <input type="text" id="auth-name" placeholder="Full name (optional)" autocomplete="name">
+        </div>
+        <button type="submit" class="btn-primary btn-full" id="auth-submit-btn">Sign In</button>
+      </form>
+
+      <div class="auth-error hidden" id="auth-error" role="alert"></div>
+
+      <p class="auth-switch">
+        <span id="auth-switch-label">Don't have an account?</span>
+        <a href="#" id="auth-switch-link" onclick="toggleAuthMode(); return false;"> Sign up free</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ── TOASTS ───────────────────────────────────────────── -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- ── SCRIPTS ─────────────────────────────────────────── -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+
 </body>
 </html>
