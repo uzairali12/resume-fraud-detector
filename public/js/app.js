@@ -120,6 +120,7 @@ async function analyzeResume() {
 
     const res = await fetch(`${API_URL}/predict`, {
       method : 'POST',
+      mode   : 'cors',
       headers,
       body   : form
     })
@@ -251,13 +252,19 @@ async function _loadHistory() {
         <td style="font-family:var(--font-mono);font-size:13px">${Math.round(row.confidence * 100)}%</td>
         <td style="font-size:13px;white-space:nowrap">${_fmtDate(row.analyzed_at)}</td>
         <td>
-          <button class="btn-delete" data-id="${row.id}" onclick="deleteRecord('${row.id}', this)">
+          <button class="btn-delete" data-id="${_escHtml(row.id)}" data-action="delete-record">
             Delete
           </button>
         </td>
       </tr>`).join('')
 
     tableWrap.classList.remove('hidden')
+
+    // Attach delete event listeners
+    document.querySelectorAll('[data-action="delete-record"]').forEach(btn => {
+      btn.removeEventListener('click', _handleDeleteRecord)
+      btn.addEventListener('click', _handleDeleteRecord)
+    })
 
   } catch (err) {
     loading.classList.add('hidden')
@@ -267,17 +274,27 @@ async function _loadHistory() {
   }
 }
 
+function _handleDeleteRecord(e) {
+  const btn = e.currentTarget
+  const id = btn.getAttribute('data-id')
+  if (id) deleteRecord(id, btn)
+}
+
 async function deleteRecord(id, btn) {
-  const token = await getAccessToken()
-  if (!token) return
-
-  const originalText = btn.textContent
-  btn.textContent = '…'
-  btn.disabled = true
-
   try {
+    const token = await getAccessToken()
+    if (!token) {
+      showToast('Please sign in to delete records', 'error')
+      return
+    }
+
+    const originalText = btn.textContent
+    btn.textContent = '…'
+    btn.disabled = true
+
     const res = await fetch(`${API_URL}/history/${id}`, {
       method: 'DELETE',
+      mode: 'cors',
       headers: { 'Authorization': `Bearer ${token}` }
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -291,10 +308,10 @@ async function deleteRecord(id, btn) {
       document.getElementById('history-empty-msg').textContent = 'No analyses yet.'
       document.getElementById('history-empty').classList.remove('hidden')
     }
-  } catch {
+  } catch (err) {
     btn.textContent = originalText
     btn.disabled = false
-    showToast('Could not delete record', 'error')
+    showToast(`Could not delete record: ${err.message}`, 'error')
   }
 }
 
@@ -345,11 +362,16 @@ function _escHtml(str) {
 // ── INIT ──────────────────────────────────────────────────────
 
 ;(async function init() {
-  const user = await getCurrentUser()
-  if (user) {
-    _updateNavbar(user)
-    navigateTo('dashboard')
-  } else {
+  try {
+    const user = await getCurrentUser()
+    if (user) {
+      _updateNavbar(user)
+      navigateTo('dashboard')
+    } else {
+      navigateTo('landing')
+    }
+  } catch (err) {
+    console.error('Init error:', err)
     navigateTo('landing')
   }
 })()

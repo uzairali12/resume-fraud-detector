@@ -8,10 +8,12 @@ Endpoints:
   GET  /history       → fetch this user's past predictions (requires auth)
   DELETE /history/{id} → delete one history record (requires auth)
 """
-
+from dotenv import load_dotenv
+load_dotenv()
 import io
 import os
 import re
+import sys
 import uuid
 import logging
 from datetime import datetime, timezone
@@ -20,6 +22,7 @@ from typing import Optional
 import joblib
 import pdfplumber
 from docx import Document
+from data_science.features import ResumeFeatureExtractor
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -44,17 +47,50 @@ SUPABASE_JWT_SECRET = os.environ["SUPABASE_JWT_SECRET"]
 
 # Comma-separated list of allowed frontend origins
 # e.g. "https://resume-fraud-detector.vercel.app,http://localhost:5500"
-RAW_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5500")
-ALLOWED_ORIGINS = [o.strip() for o in RAW_ORIGINS.split(",")]
+DEFAULT_ORIGINS = [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+RAW_ORIGINS = os.environ.get("ALLOWED_ORIGINS", ",".join(DEFAULT_ORIGINS))
+ALLOWED_ORIGINS = [o.strip() for o in RAW_ORIGINS.split(",") if o.strip()]
+
+# Log CORS configuration
+log.info("CORS allowed origins: %s", ALLOWED_ORIGINS)
 
 # ── Supabase client (for DB reads/writes) ─────────────────────────────────────
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-# ── Load ML pipeline (once, at startup) ───────────────────────────────────────
 
+# ── Load ML pipeline (once, at startup) ───────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "resume_fraud_model.pkl")
+
+# If the model was saved when training code ran as __main__, pickle may
+# reference ResumeFeatureExtractor in module __main__. Make it available.
+sys.modules.setdefault("__main__", sys.modules.get("__main__"))
+setattr(sys.modules["__main__"], "ResumeFeatureExtractor", ResumeFeatureExtractor)
+
+# Support old scikit-learn pickle paths from legacy versions.
+try:
+    import sklearn.preprocessing._data as _sklearn_preprocessing_data
+    sys.modules.setdefault('sklearn.preprocessing.data', _sklearn_preprocessing_data)
+except ImportError:
+    pass
+
+try:
+    import sklearn.svm._classes as _sklearn_svm_classes
+    sys.modules.setdefault('sklearn.svm.classes', _sklearn_svm_classes)
+except ImportError:
+    pass
+
+try:
+    import sklearn.preprocessing._label as _sklearn_preprocessing_label
+    sys.modules.setdefault('sklearn.preprocessing.label', _sklearn_preprocessing_label)
+except ImportError:
+    pass
 
 try:
     pipeline = joblib.load(MODEL_PATH)
@@ -208,7 +244,7 @@ def extract_signals(text: str) -> dict:
     buzz_hits  = [bw for bw in BUZZWORDS if bw in text.lower()]
     prest_hits = [kw for kw in PRESTIGE_KW if kw in text.lower()]
 
-    year_vals  = [int(m[0]) for m in YEAR_PAT.findall(text) if m[0].isdigit()]
+    year_vals  = [int(m) for m in YEAR_PAT.findall(text) if m.isdigit()]
     ranges     = [(int(s), int(e)) for s, e in DATE_RANGE_PAT.findall(text)]
     overlaps   = sum(
         1
@@ -285,15 +321,12 @@ async def predict(
     # Run model
     label      = int(pipeline.predict([text])[0])
     proba      = pipeline.predict_proba([text])[0]
-   confidence = float(max(proba))
-    prediction = "fraud" if label == 1 else "genuine"
-
-    # Extract human-readable signals
+    confidence = float(max(proba))
     signals    = extract_signals(text)
     analyzed_at = datetime.now(timezone.utc).isoformat()
 
     result = PredictionResult(
-        prediction  = prediction,
+        prediction  = label,
         confidence  = confidence,
         label       = label,
         signals     = signals,

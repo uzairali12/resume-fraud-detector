@@ -1,5 +1,32 @@
+# Python
 venv/
 __pycache__/
 *.pyc
-data_science/
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Environment
 .env
+.env.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data science (keep local)
+data_science/
+
+# Logs
+*.log
